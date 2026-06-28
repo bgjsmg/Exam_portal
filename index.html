@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Interactive Python Descriptive Examination Portal</title>
+<style>
+  :root {
+    --primary: #1a56db;
+    --primary-dark: #1040b0;
+    --secondary: #0e9f6e;
+    --danger: #e02424;
+    --warn: #d97706;
+    --bg: #f3f4f6;
+    --card: #ffffff;
+    --border: #d1d5db;
+    --text: #111827;
+    --muted: #6b7280;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.09);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ---- Layout ---- */
+  .page { display: none; }
+  .page.active { display: block; }
+  .container { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+
+  /* ---- Header ---- */
+  header {
+    background: linear-gradient(135deg, #1a56db 0%, #0e9f6e 100%);
+    color: #fff; padding: 18px 24px; display: flex;
+    align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.02em; }
+  header span { font-size: 0.85rem; opacity: 0.85; }
+
+  /* ---- Card ---- */
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px 28px; margin-bottom: 20px; }
+  .card h2 { font-size: 1.15rem; color: var(--primary); margin-bottom: 18px; border-bottom: 2px solid var(--bg); padding-bottom: 8px; }
+
+  /* ---- Forms ---- */
+  label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; margin-top: 14px; }
+  input[type="text"], input[type="password"], input[type="number"], textarea, select {
+    width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 6px;
+    font-size: 0.97rem; transition: border 0.2s; outline: none; background: #fafafa;
+  }
+  input:focus, textarea:focus { border-color: var(--primary); background: #fff; }
+  textarea { resize: vertical; min-height: 110px; font-family: inherit; }
+
+  /* ---- Buttons ---- */
+  .btn { display: inline-block; padding: 10px 24px; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.18s, transform 0.1s; }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-success { background: var(--secondary); color: #fff; }
+  .btn-success:hover { background: #0a7a55; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-warn { background: var(--warn); color: #fff; }
+  .btn-warn:hover { background: #b45309; }
+  .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn-outline:hover { background: var(--primary); color: #fff; }
+  .btn-sm { padding: 6px 14px; font-size: 0.83rem; }
+  .btn-block { width: 100%; margin-top: 16px; }
+
+  /* ---- Alerts ---- */
+  .alert { padding: 12px 16px; border-radius: 6px; margin: 12px 0; font-size: 0.92rem; }
+  .alert-error { background: #fde8e8; color: #9b1c1c; border: 1px solid #f8b4b4; }
+  .alert-success { background: #def7ec; color: #03543f; border: 1px solid #84e1bc; }
+  .alert-info { background: #e1effe; color: #1e429f; border: 1px solid #a4cafe; }
+
+  /* ---- Question card ---- */
+  .q-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px 24px; margin-bottom: 20px; border-left: 4px solid var(--primary); }
+  .q-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+  .q-num { font-size: 0.78rem; font-weight: 700; color: #fff; background: var(--primary); border-radius: 20px; padding: 2px 10px; }
+  .q-marks { font-size: 0.78rem; font-weight: 600; color: var(--warn); background: #fef3c7; border-radius: 20px; padding: 2px 10px; }
+  .q-text { font-size: 0.97rem; font-weight: 600; margin-bottom: 10px; line-height: 1.5; }
+  .eval-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px 14px; margin-top: 10px; font-size: 0.88rem; }
+  .eval-box .score { font-weight: 700; color: var(--secondary); font-size: 1rem; }
+  .eval-box .fb { color: #374151; margin-top: 4px; }
+  .eval-pending { color: var(--muted); font-size: 0.85rem; margin-top: 8px; font-style: italic; }
+
+  /* ---- Progress bar ---- */
+  .progress-wrap { background: #e5e7eb; border-radius: 99px; height: 8px; margin: 10px 0 20px; }
+  .progress-bar { height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.4s; }
+
+  /* ---- Results ---- */
+  .result-summary { text-align: center; padding: 24px 0; }
+  .result-score { font-size: 3rem; font-weight: 800; color: var(--primary); }
+  .result-label { font-size: 1rem; color: var(--muted); }
+  .result-grade { font-size: 1.4rem; font-weight: 700; margin-top: 6px; }
+  .grade-A { color: var(--secondary); }
+  .grade-B { color: var(--primary); }
+  .grade-C { color: var(--warn); }
+  .grade-F { color: var(--danger); }
+
+  .result-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .result-table th { background: var(--primary); color: #fff; padding: 9px 12px; text-align: left; }
+  .result-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .result-table tr:nth-child(even) td { background: #f9fafb; }
+
+  /* ---- Teacher panel ---- */
+  .stat-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .stat-box { flex: 1 1 140px; background: var(--bg); border-radius: 8px; padding: 14px 16px; text-align: center; }
+  .stat-num { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+  .stat-label { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+  .student-row { background: var(--bg); border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+  .student-info span { display: block; font-size: 0.8rem; color: var(--muted); }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; }
+  .badge-green { background: #d1fae5; color: #065f46; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+
+  /* ---- Config panel (API key) ---- */
+  .config-toggle { font-size: 0.82rem; color: var(--primary); cursor: pointer; text-decoration: underline; }
+  .config-panel { margin-top: 14px; padding: 14px; background: #f9fafb; border-radius: 8px; border: 1px dashed var(--border); }
+
+  /* ---- Spinner ---- */
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid #ccc; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---- Nav links ---- */
+  .nav-links { display: flex; gap: 10px; }
+  .nav-btn { background: rgba(255,255,255,0.18); color: #fff; border: 1px solid rgba(255,255,255,0.35); border-radius: 5px; padding: 5px 13px; font-size: 0.82rem; cursor: pointer; font-weight: 600; transition: background 0.18s; }
+  .nav-btn:hover { background: rgba(255,255,255,0.32); }
+
+  /* ---- Misc ---- */
+  .mt-8 { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .mt-24 { margin-top: 24px; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  .text-center { text-align: center; }
+  .locked-notice { background: #fef3c7; color: #78350f; border: 1px solid #fde68a; border-radius: 8px; padding: 18px 20px; text-align: center; font-size: 1rem; font-weight: 600; }
+  .submitted-notice { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; border-radius: 8px; padding: 18px 20px; text-align: center; }
+
+  @media (max-width: 600px) {
+    .card { padding: 18px 14px; }
+    header h1 { font-size: 1rem; }
+    .result-score { font-size: 2.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🐍 Python Descriptive Examination Portal</h1>
+  <div class="nav-links" id="navLinks"></div>
+</header>
+
+<!-- ============================================================ -->
+<!--  PAGE: LANDING                                               -->
+<!-- ============================================================ -->
+<div id="pageLanding" class="page active">
+  <div class="container" style="max-width:500px">
+    <div class="card text-center" style="margin-top:40px">
+      <h2 style="text-align:center;font-size:1.4rem;color:var(--primary)">Welcome</h2>
+      <p style="color:var(--muted);margin-bottom:24px">Select your role to continue</p>
+      <button class="btn btn-primary btn-block" onclick="showPage('pageStudent')">🎓 Student Login</button>
+      <button class="btn btn-outline btn-block" style="margin-top:10px" onclick="showPage('pageTeacher')">🔑 Teacher Login</button>
+      <div class="alert alert-info" style="margin-top:18px;text-align:left;font-size:0.83rem">
+        🤖 <b>AI-Powered Evaluation</b> — Answers are automatically graded by Groq LLM server-side. No setup needed for students.
+      </div>
+    </div>
+
+    <!-- Teacher-only config panel (hidden from students) -->
+    <div class="card config-panel" id="teacherConfigPanel" style="margin-top:0;display:none">
+      <h2>⚙️ Admin: LLM Model Selection</h2>
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:10px">
+        API key is set server-side via Netlify environment variable. Select the model to use for evaluation.
+      </p>
+      <label>Model</label>
+      <select id="cfgModel">
+        <option value="openai/gpt-oss-20b">GPT OSS 20B ⚡ Fastest (1000 t/s) — Recommended</option>
+        <option value="llama-3.3-70b-versatile">Llama 3.3 70B — Best Quality (280 t/s)</option>
+        <option value="llama-3.1-8b-instant">Llama 3.1 8B — Lightweight (560 t/s)</option>
+        <option value="openai/gpt-oss-120b">GPT OSS 120B — Most Capable (500 t/s)</option>
+        <option value="meta-llama/llama-4-scout-17b-16e-instruct">Llama 4 Scout 17B — Preview (750 t/s)</option>
+        <option value="qwen/qwen3-32b">Qwen3 32B — Preview Reasoning (400 t/s)</option>
+      </select>
+      <button class="btn btn-success mt-16" onclick="saveConfig()">💾 Save Model Preference</button>
+      <div id="cfgMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--  PAGE: TEACHER LOGIN                                         -->
+<!-- ============================================================ -->
+<div id="pageTeacher" class="page">
+  <div class="container" style="max-width:420px">
+    <div class="card" style="margin-top:40px">
+      <h2>Teacher Login</h2>
+      <label>Username</label>
+      <input type="text" id="tUser" placeholder="teacher" />
+      <label>Password</label>
+      <input type="password" id="tPass" placeholder="••••••" />
+      <div id="tLoginErr"></div>
+      <button class="btn btn-primary btn-block" onclick="teacherLogin()">Login</button>
+      <button class="btn btn-outline btn-block" style="margin-top:8px" onclick="showPage('pageLanding')">← Back</button>
+    </div>
+    <p style="font-size:0.78rem;color:var(--muted);text-align:center">Default credentials: <b>teacher</b> / <b>pass123</b></p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--  PAGE: TEACHER DASHBOARD                                     -->
+<!-- ============================================================ -->
+<div id="pageTeacherDash" class="page">
+  <div class="container">
+    <div class="card">
+      <div class="flex-between" style="flex-wrap:wrap;gap:10px">
+        <h2 style="margin-bottom:0">Teacher Dashboard</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="lockBtn" class="btn btn-warn btn-sm" onclick="toggleLock()">🔒 Lock Exam</button>
+          <button class="btn btn-danger btn-sm" onclick="resetData()">🗑️ Reset All Data</button>
+        </div>
+      </div>
+      <div class="stat-row mt-16" id="teacherStats"></div>
+      <div id="lockStatus" class="alert alert-info mt-8"></div>
+    </div>
+    <div class="card">
+      <h2>Student Results</h2>
+      <div id="studentList"><p style="color:var(--muted)">No submissions yet.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--  PAGE: STUDENT DETAILS                                       -->
+<!-- ============================================================ -->
+<div id="pageStudentDetails" class="page">
+  <div class="container" style="max-width:480px">
+    <div class="card" style="margin-top:30px">
+      <h2>Student Details</h2>
+      <div id="sDetailsErr"></div>
+      <label>Register Number</label>
+      <input type="text" id="sRegNo" placeholder="e.g. 21CS001" />
+      <label>Full Name</label>
+      <input type="text" id="sName" placeholder="Your full name" />
+      <label>Class / Section</label>
+      <input type="text" id="sClass" placeholder="e.g. II B.Sc CS - A" />
+      <button class="btn btn-primary btn-block" onclick="startExam()">Start Examination →</button>
+      <button class="btn btn-outline btn-block" style="margin-top:8px" onclick="showPage('pageLanding')">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--  PAGE: EXAM                                                  -->
+<!-- ============================================================ -->
+<div id="pageExam" class="page">
+  <div class="container">
+    <div class="card" style="padding:16px 24px">
+      <div class="flex-between" style="flex-wrap:wrap;gap:8px">
+        <div>
+          <strong id="examStudentName"></strong>
+          <span style="font-size:0.82rem;color:var(--muted);margin-left:10px" id="examRegNo"></span>
+        </div>
+        <span style="font-size:0.82rem;color:var(--muted)">Total: 100 marks</span>
+      </div>
+      <div class="progress-wrap mt-8">
+        <div class="progress-bar" id="examProgress" style="width:0%"></div>
+      </div>
+      <p style="font-size:0.78rem;color:var(--muted)" id="progressLabel">0 of 10 answered</p>
+    </div>
+
+    <div id="questionsContainer"></div>
+
+    <div class="card text-center" id="submitSection">
+      <p style="color:var(--muted);margin-bottom:14px;font-size:0.9rem">Review all answers before submitting. You cannot change answers after submission.</p>
+      <button class="btn btn-success" style="font-size:1rem;padding:12px 36px" onclick="submitExam()">✅ Submit Examination</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--  PAGE: RESULTS                                               -->
+<!-- ============================================================ -->
+<div id="pageResults" class="page">
+  <div class="container">
+    <div class="card">
+      <div class="result-summary">
+        <div style="font-size:1rem;color:var(--muted);margin-bottom:4px">Your Score</div>
+        <div class="result-score" id="rTotalScore">—</div>
+        <div class="result-label">out of 100 marks</div>
+        <div class="result-grade" id="rGrade"></div>
+        <div style="color:var(--muted);font-size:0.85rem;margin-top:6px" id="rPercent"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Question-wise Breakdown</h2>
+      <table class="result-table" id="rBreakdown">
+        <thead><tr><th>#</th><th>Question</th><th>Max</th><th>Score</th><th>Feedback</th></tr></thead>
+        <tbody id="rBreakdownBody"></tbody>
+      </table>
+    </div>
+    <div class="text-center mt-16">
+      <button class="btn btn-outline" onclick="showPage('pageLanding')">🏠 Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--  PAGE: STUDENT LOCKED / ALREADY SUBMITTED                   -->
+<!-- ============================================================ -->
+<div id="pageBlocked" class="page">
+  <div class="container" style="max-width:500px">
+    <div class="card" style="margin-top:60px">
+      <div id="blockedMsg"></div>
+      <button class="btn btn-outline btn-block" style="margin-top:16px" onclick="showPage('pageLanding')">← Back to Home</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+//  DATA
+// ================================================================
+const QUESTIONS = [
+  { id:1, text:"What is Python? Explain sequence data types in Python with examples.", maxMarks:10,
+    modelAnswer:"Python is a high-level, interpreted, general-purpose programming language created by Guido van Rossum. Sequence data types include: List (mutable, ordered, allows duplicates, e.g., [1,2,3]), Tuple (immutable, ordered, e.g., (1,2,3)), String (immutable sequence of characters, e.g., 'hello'), Range (sequence of numbers, e.g., range(5)). Each supports indexing, slicing, iteration and len()." },
+  { id:2, text:"Explain arithmetic operators in Python with examples and a program demonstrating all operators.", maxMarks:10,
+    modelAnswer:"Python arithmetic operators: + (addition), - (subtraction), * (multiplication), / (true division), // (floor division), % (modulus), ** (exponentiation). Example: a=10, b=3; a+b=13, a-b=7, a*b=30, a/b=3.33, a//b=3, a%b=1, a**b=1000. A program should demonstrate all operators with print statements showing results and explanations." },
+  { id:3, text:"Explain logical operators, membership operators and identity operators in Python with examples.", maxMarks:10,
+    modelAnswer:"Logical operators: and (both true), or (at least one true), not (negation). Membership operators: in (checks membership), not in. Identity operators: is (same object), is not. Examples: True and False→False; 3 in [1,2,3]→True; x=[];y=x; x is y→True. Logical operators work with boolean expressions; membership checks sequences; identity checks object identity (id())." },
+  { id:4, text:"Explain if-elif-else conditional statement in Python with syntax, flowchart description and examples.", maxMarks:10,
+    modelAnswer:"if-elif-else allows multi-way branching. Syntax: if condition1: block1 elif condition2: block2 else: block3. Execution: evaluates conditions top-to-bottom, executes first true block, else executes else block. Example: grade checker using marks ranges with multiple elif conditions. Nested if-else also possible. Indentation is critical in Python." },
+  { id:5, text:"Explain while loop and for loop in Python with syntax, examples and differences between them.", maxMarks:10,
+    modelAnswer:"while loop: repeats while condition is true; syntax: while condition: body. for loop: iterates over a sequence; syntax: for var in sequence: body. Differences: while is condition-based, for is iteration-based. while may run 0 times if condition initially false. for works with any iterable. Examples: while with counter, for with range() and list. Both support break, continue, else clause." },
+  { id:6, text:"Write Python programs to print right-angled triangle and equilateral triangle patterns using loops.", maxMarks:15,
+    modelAnswer:"Right triangle (n=5 rows): for i in range(1,n+1): print('* '*i). Output: *, * *, * * *, etc. Equilateral triangle: for i in range(1,n+1): print(' '*(n-i) + '* '*(2*i-1)). This centers each row with spaces and prints odd number of stars per row creating a symmetric triangle. Both programs should include proper loop logic and sample output." },
+  { id:7, text:"Explain break, continue and pass statements in Python with examples and use cases.", maxMarks:10,
+    modelAnswer:"break: immediately exits the nearest enclosing loop. Use case: stop searching when item found. continue: skips rest of current iteration, moves to next. Use case: skip even numbers. pass: does nothing; acts as a placeholder. Use case: empty function/class body. Examples: for i in range(10): if i==5: break (prints 0-4); if i%2==0: continue (prints odd numbers); def todo(): pass (placeholder function)." },
+  { id:8, text:"Explain functions in Python. Also explain pass-by-value and pass-by-reference with examples.", maxMarks:10,
+    modelAnswer:"Functions are reusable blocks defined with def keyword. Syntax: def func_name(params): body; return value. Python uses pass-by-object-reference. Immutable types (int, str, tuple) behave like pass-by-value—changes inside function don't affect original. Mutable types (list, dict) behave like pass-by-reference—changes inside function affect original. Example: def modify(lst): lst.append(4) modifies original list; def inc(x): x+=1 does not modify original integer." },
+  { id:9, text:"Explain different types of function parameters in Python with examples.", maxMarks:5,
+    modelAnswer:"Python parameter types: 1) Positional: def f(a,b) called as f(1,2). 2) Keyword: f(a=1,b=2) any order. 3) Default: def f(a,b=10) b has default value. 4) Variable-length (*args): collects extra positional args as tuple. 5) Keyword variable-length (**kwargs): collects extra keyword args as dict. 6) Keyword-only (after *): must be passed as keyword. Example showing all types in one function definition." },
+  { id:10, text:"Explain map(), filter() and reduce() functions in Python with syntax and examples.", maxMarks:10,
+    modelAnswer:"map(func, iterable): applies function to each element; returns map object. e.g., list(map(lambda x:x**2, [1,2,3]))→[1,4,9]. filter(func, iterable): returns elements where function returns True; e.g., list(filter(lambda x:x%2==0, [1,2,3,4]))→[2,4]. reduce(func, iterable): cumulatively applies function; from functools import reduce; reduce(lambda x,y:x+y,[1,2,3,4])→10. All three are functional programming tools that work with lambda functions." }
+];
+
+const TEACHER_CREDS = { username: 'teacher', password: 'pass123' };
+const LS = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+  del: k => localStorage.removeItem(k)
+};
+
+let currentStudent = null;
+let evaluations = {};   // { qId: { marks, feedback } }
+let evaluationInProgress = 0;
+
+// ================================================================
+//  NAVIGATION
+// ================================================================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  updateNav(id);
+}
+
+function updateNav(pageId) {
+  const nav = document.getElementById('navLinks');
+  nav.innerHTML = '';
+  if (['pageTeacherDash'].includes(pageId)) {
+    const btn = document.createElement('button');
+    btn.className = 'nav-btn';
+    btn.textContent = 'Logout';
+    btn.onclick = () => showPage('pageLanding');
+    nav.appendChild(btn);
+  }
+}
+
+// ================================================================
+//  CONFIG
+// ================================================================
+function saveConfig() {
+  const model = document.getElementById('cfgModel').value;
+  LS.set('groq_model', model);
+  document.getElementById('cfgMsg').innerHTML = '<div class="alert alert-success">✅ Model preference saved!</div>';
+  setTimeout(() => document.getElementById('cfgMsg').innerHTML = '', 2000);
+}
+
+function loadConfig() {
+  const model = LS.get('groq_model');
+  if (model) document.getElementById('cfgModel').value = model;
+}
+
+// ================================================================
+//  TEACHER
+// ================================================================
+function teacherLogin() {
+  const u = document.getElementById('tUser').value.trim();
+  const p = document.getElementById('tPass').value;
+  if (u === TEACHER_CREDS.username && p === TEACHER_CREDS.password) {
+    document.getElementById('tLoginErr').innerHTML = '';
+    showPage('pageTeacherDash');
+    renderTeacherDash();
+    // Show config panel only for teacher
+    document.getElementById('teacherConfigPanel').style.display = 'block';
+  } else {
+    document.getElementById('tLoginErr').innerHTML = '<div class="alert alert-error">❌ Invalid credentials</div>';
+  }
+}
+
+function renderTeacherDash() {
+  const locked = LS.get('exam_locked') || false;
+  document.getElementById('lockBtn').textContent = locked ? '🔓 Unlock Exam' : '🔒 Lock Exam';
+  document.getElementById('lockBtn').className = 'btn btn-sm ' + (locked ? 'btn-success' : 'btn-warn');
+  document.getElementById('lockStatus').innerHTML = locked
+    ? '🔒 Exam is currently <b>LOCKED</b>. Students cannot attempt the exam.'
+    : '🔓 Exam is currently <b>OPEN</b>. Students can attempt the exam.';
+
+  const submissions = LS.get('submissions') || [];
+  const stats = document.getElementById('teacherStats');
+  const avgScore = submissions.length ? Math.round(submissions.reduce((a,s)=>a+s.totalScore,0)/submissions.length) : 0;
+  stats.innerHTML = `
+    <div class="stat-box"><div class="stat-num">${submissions.length}</div><div class="stat-label">Submissions</div></div>
+    <div class="stat-box"><div class="stat-num">${avgScore}</div><div class="stat-label">Avg Score</div></div>
+    <div class="stat-box"><div class="stat-num">${submissions.filter(s=>s.totalScore>=50).length}</div><div class="stat-label">Passed</div></div>
+    <div class="stat-box"><div class="stat-num">${submissions.filter(s=>s.totalScore<50).length}</div><div class="stat-label">Failed</div></div>
+  `;
+
+  const list = document.getElementById('studentList');
+  if (!submissions.length) { list.innerHTML = '<p style="color:var(--muted)">No submissions yet.</p>'; return; }
+  list.innerHTML = submissions.map(s => `
+    <div class="student-row">
+      <div class="student-info">
+        <strong>${s.name}</strong>
+        <span>${s.regNo} &bull; ${s.className}</span>
+        <span style="font-size:0.75rem;color:var(--muted)">${new Date(s.timestamp).toLocaleString()}</span>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:1.4rem;font-weight:800;color:var(--primary)">${s.totalScore}<span style="font-size:0.8rem;font-weight:400">/100</span></div>
+        <span class="badge ${s.totalScore>=50?'badge-green':'badge-blue'}">${getGrade(s.totalScore)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleLock() {
+  const locked = LS.get('exam_locked') || false;
+  LS.set('exam_locked', !locked);
+  renderTeacherDash();
+}
+
+function resetData() {
+  if (!confirm('⚠️ This will delete ALL student submissions and results. Are you sure?')) return;
+  LS.del('submissions');
+  LS.del('exam_locked');
+  renderTeacherDash();
+}
+
+// ================================================================
+//  STUDENT
+// ================================================================
+function showPage_student() {
+  const locked = LS.get('exam_locked') || false;
+  if (locked) {
+    document.getElementById('blockedMsg').innerHTML = `
+      <div class="locked-notice">🔒 The examination is currently locked by the teacher.<br>
+      Please contact your teacher to unlock it.</div>`;
+    showPage('pageBlocked');
+    return;
+  }
+  showPage('pageStudentDetails');
+}
+
+function startExam() {
+  const regNo = document.getElementById('sRegNo').value.trim();
+  const name = document.getElementById('sName').value.trim();
+  const className = document.getElementById('sClass').value.trim();
+  const errEl = document.getElementById('sDetailsErr');
+  if (!regNo || !name || !className) { errEl.innerHTML = '<div class="alert alert-error">Please fill all fields.</div>'; return; }
+
+  // Check already submitted
+  const submissions = LS.get('submissions') || [];
+  if (submissions.find(s => s.regNo === regNo)) {
+    const sub = submissions.find(s => s.regNo === regNo);
+    document.getElementById('blockedMsg').innerHTML = `
+      <div class="submitted-notice">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--secondary)">${sub.totalScore}/100</div>
+        <p>You have already submitted the examination.</p>
+        <p style="font-size:0.85rem;color:var(--muted)">Submitted: ${new Date(sub.timestamp).toLocaleString()}</p>
+      </div>`;
+    showPage('pageBlocked');
+    return;
+  }
+
+  // Check locked again
+  if (LS.get('exam_locked')) {
+    document.getElementById('blockedMsg').innerHTML = `<div class="locked-notice">🔒 The examination is currently locked.</div>`;
+    showPage('pageBlocked');
+    return;
+  }
+
+  currentStudent = { regNo, name, className };
+  evaluations = {};
+  evaluationInProgress = 0;
+  errEl.innerHTML = '';
+  renderExam();
+  showPage('pageExam');
+}
+
+function renderExam() {
+  document.getElementById('examStudentName').textContent = currentStudent.name;
+  document.getElementById('examRegNo').textContent = currentStudent.regNo;
+
+  const container = document.getElementById('questionsContainer');
+  container.innerHTML = QUESTIONS.map(q => `
+    <div class="q-card" id="qcard-${q.id}">
+      <div class="q-header">
+        <span class="q-num">Q${q.id}</span>
+        <span class="q-marks">${q.maxMarks} marks</span>
+      </div>
+      <div class="q-text">${q.text}</div>
+      <textarea id="ans-${q.id}" rows="5" placeholder="Type your answer here..." oninput="onAnswerChange()"></textarea>
+      <div id="eval-${q.id}"></div>
+    </div>
+  `).join('');
+  updateProgress();
+}
+
+function onAnswerChange() {
+  updateProgress();
+}
+
+function updateProgress() {
+  const answered = QUESTIONS.filter(q => (document.getElementById('ans-' + q.id)?.value || '').trim().length > 20).length;
+  const pct = (answered / QUESTIONS.length) * 100;
+  document.getElementById('examProgress').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${answered} of ${QUESTIONS.length} answered`;
+}
+
+// ================================================================
+//  LLM EVALUATION
+// ================================================================
+async function evaluateAnswer(q, answer) {
+  const model = LS.get('groq_model') || 'openai/gpt-oss-20b';
+
+  // Calls Netlify serverless function — API key stays server-side, works for ALL users
+  const resp = await fetch('/api/evaluate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      question: q.text,
+      modelAnswer: q.modelAnswer,
+      studentAnswer: answer,
+      maxMarks: q.maxMarks,
+      model: model
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.error || `Server error (HTTP ${resp.status})`);
+  }
+
+  const data = await resp.json();
+  return { marks: Math.min(q.maxMarks, Math.max(0, parseInt(data.marks))), feedback: data.feedback };
+}
+
+function showEvalSpinner(qId) {
+  document.getElementById('eval-' + qId).innerHTML = `<div class="eval-pending"><span class="spinner"></span>Evaluating with AI...</div>`;
+}
+function showEvalResult(qId, result) {
+  document.getElementById('eval-' + qId).innerHTML = `
+    <div class="eval-box">
+      <div class="score">Score: ${result.marks} / ${QUESTIONS.find(q=>q.id===qId).maxMarks}</div>
+      <div class="fb">💬 ${result.feedback}</div>
+    </div>`;
+}
+function showEvalError(qId, err) {
+  document.getElementById('eval-' + qId).innerHTML = `<div class="alert alert-error">⚠️ Evaluation failed: ${err}. Please check your API key.</div>`;
+}
+
+async function submitExam() {
+  // Validate at least some answers
+  const answers = QUESTIONS.map(q => ({ q, answer: (document.getElementById('ans-' + q.id)?.value || '').trim() }));
+  const empty = answers.filter(a => a.answer.length < 5);
+  if (empty.length === QUESTIONS.length) { alert('Please answer at least one question before submitting.'); return; }
+  if (!confirm(`You are about to submit your exam. This cannot be undone. Proceed?`)) return;
+
+  // Disable submit button
+  document.getElementById('submitSection').innerHTML = '<div class="alert alert-info"><span class="spinner"></span>Evaluating your answers with AI... Please wait.</div>';
+
+  // Evaluate all answers
+  const results = [];
+  for (const { q, answer } of answers) {
+    showEvalSpinner(q.id);
+    try {
+      const result = await evaluateAnswer(q, answer || '(No answer provided)');
+      evaluations[q.id] = result;
+      showEvalResult(q.id, result);
+      results.push({ qId: q.id, marks: result.marks, feedback: result.feedback, maxMarks: q.maxMarks });
+    } catch(e) {
+      showEvalError(q.id, e.message);
+      results.push({ qId: q.id, marks: 0, feedback: 'Evaluation error: ' + e.message, maxMarks: q.maxMarks });
+    }
+  }
+
+  const totalScore = results.reduce((a,r) => a + r.marks, 0);
+  const submission = {
+    regNo: currentStudent.regNo,
+    name: currentStudent.name,
+    className: currentStudent.className,
+    totalScore,
+    results,
+    timestamp: Date.now()
+  };
+  const submissions = LS.get('submissions') || [];
+  submissions.push(submission);
+  LS.set('submissions', submissions);
+
+  showResults(submission);
+}
+
+function showResults(sub) {
+  document.getElementById('rTotalScore').textContent = sub.totalScore;
+  const pct = sub.totalScore;
+  const grade = getGrade(pct);
+  const gradeEl = document.getElementById('rGrade');
+  gradeEl.textContent = grade;
+  gradeEl.className = 'result-grade grade-' + (pct>=75?'A':pct>=60?'B':pct>=35?'C':'F');
+  document.getElementById('rPercent').textContent = pct + '% — ' + getGradeLabel(pct);
+
+  const tbody = document.getElementById('rBreakdownBody');
+  tbody.innerHTML = sub.results.map((r,i) => `
+    <tr>
+      <td>Q${r.qId}</td>
+      <td style="max-width:240px">${QUESTIONS[i].text.substring(0,60)}…</td>
+      <td>${r.maxMarks}</td>
+      <td><strong style="color:${r.marks/r.maxMarks>=0.5?'var(--secondary)':'var(--danger)'}">${r.marks}</strong></td>
+      <td style="font-size:0.82rem;color:var(--muted)">${r.feedback}</td>
+    </tr>`).join('');
+
+  showPage('pageResults');
+}
+
+function getGrade(score) {
+  if (score >= 75) return 'A';
+  if (score >= 60) return 'B';
+  if (score >= 35) return 'C';
+  return 'F';
+}
+function getGradeLabel(score) {
+  if (score >= 75) return 'Distinction';
+  if (score >= 60) return 'First Class';
+  if (score >= 35) return 'Pass';
+  return 'Fail';
+}
+
+// ================================================================
+//  INIT
+// ================================================================
+loadConfig();
+
+// Wire student button to check lock status first
+document.querySelectorAll('button').forEach(b => {
+  if (b.textContent.includes('Student Login')) b.onclick = showPage_student;
+});
+</script>
+</body>
+</html>
